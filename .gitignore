@@ -1,0 +1,37 @@
+# =============================================================================
+# 仓库只保存「源码 + 文档 + 构建脚本」，环境文件全部本地保留、不入库。
+# 大文件由 make deps / fetch_deps.py 自动拉取，clone 后无需手动找资源。
+# =============================================================================
+
+# 本地运行环境（体积大 / 平台相关，make setup 生成）
+.venv/
+venv/
+env/
+
+# 权重与预编译 wheel（821 MB + 18 MB，超过 GitHub 单文件 100 MB 限制）
+models/*.gguf
+wheels/*.whl
+*.gguf
+*.whl
+*.part
+
+# 运行产物
+audio/*.wav
+out.wav
+*.wav
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.pyo
+
+# 日志 / 临时
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# 保留空目录占位（这几个不能忽略）
+!models/.gitkeep
+!wheels/.gitkeep
+!audio/.gitkeep

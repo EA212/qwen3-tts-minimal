@@ -1,0 +1,18 @@
+# 构建上下文只保留运行所需的源码、wheel 与权重，尽可能小。
+# 注意：wheels/ 和 models/ 不能忽略，Dockerfile 需要 COPY。
+.git
+.gitignore
+.venv
+docs
+audio/*.wav
+__pycache__
+*.pyc
+*.wav
+*.tar.gz
+*.part
+Makefile
+Makefile.win
+make.bat
+setup.ps1
+start.sh
+README.md

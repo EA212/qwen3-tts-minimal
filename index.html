@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Qwen3-TTS · GGML 极速版</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:#0e1116;color:#e6e9ef;font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:680px;margin:0 auto;padding:48px 20px 80px}
+h1{font-size:26px;margin:0 0 6px;font-weight:650}
+h1 span{font-size:13px;font-weight:500;color:#7ee2b8;border:1px solid #2b6b52;border-radius:20px;padding:3px 10px;vertical-align:middle;margin-left:8px}
+.sub{color:#8b93a1;margin:0 0 28px;font-size:13px}
+.sub b{color:#c8d0dc;font-weight:500}
+textarea{width:100%;height:130px;background:#171c24;border:1px solid #2a313d;border-radius:12px;color:#e6e9ef;padding:14px 16px;resize:vertical;font:inherit;outline:none}
+textarea:focus{border-color:#3d8f70}
+.row{display:flex;align-items:center;justify-content:space-between;margin:14px 0 10px;gap:10px}
+select{background:#171c24;border:1px solid #2a313d;border-radius:9px;color:#e6e9ef;padding:8px 12px;font:inherit;outline:none}
+label{color:#8b93a1;font-size:13px}
+#len{color:#667080;font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.chip{background:#171c24;border:1px solid #2a313d;border-radius:20px;padding:5px 12px;color:#aab3c0;font-size:12px;cursor:pointer}
+.chip:hover{border-color:#3d8f70;color:#dfe6ee}
+button#go{width:100%;background:#2f8f68;color:#fff;border:0;border-radius:10px;padding:13px;font-size:15px;font-weight:600;cursor:pointer}
+button#go:hover{background:#37a67a}
+button#go:disabled{background:#2a313d;color:#6c7686;cursor:not-allowed}
+.bar{height:4px;background:#1c222c;border-radius:4px;overflow:hidden;margin:18px 0 8px}
+.bar i{display:block;height:100%;background:#2f8f68;width:0;transition:width .8s linear}
+#msg{color:#8b93a1;font-size:13px;min-height:22px}
+#result{margin-top:22px;padding:18px;background:#171c24;border:1px solid #2a313d;border-radius:12px}
+audio{width:100%;display:block;margin-bottom:12px}
+a.dl{display:inline-block;color:#7ee2b8;text-decoration:none;font-size:13px;border:1px solid #2b6b52;border-radius:8px;padding:8px 14px}
+a.dl:hover{background:#16362a}
+.meta{color:#667080;font-size:12px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Qwen3-TTS <span>GGML 极速版</span></h1>
+<p class="sub">纯 CPU · <b>Q4_K_M 量化</b> · 线程自适应 · 零 PyTorch 依赖 · 本地推理，文字不上传</p>
+<textarea id="text" maxlength="120">你好，我是千问三语音合成模型，这是最精简的本地部署。</textarea>
+<div class="row"><label>音色 <select id="speaker"></select></label><span id="len">0 / 120</span></div>
+<div class="chips" id="chips"></div>
+<button id="go" disabled>生成音频</button>
+<div class="bar"><i id="bar"></i></div>
+<div id="msg">正在加载模型…</div>
+<div id="result" hidden>
+  <audio id="player" controls></audio>
+  <a id="dl" class="dl" download>下载 WAV</a>
+  <div class="meta" id="meta"></div>
+</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const EX=["你好，我是千问三语音合成模型，这是最精简的本地部署。","今天天气不错，我们一起去公园散步吧。","这段文字用来测试语音合成的速度和音质。","欢迎使用本地部署的文字转语音服务。"];
+EX.forEach(t=>{const c=document.createElement('span');c.className='chip';c.textContent=t.length>16?t.slice(0,15)+'…':t;c.title=t;c.onclick=()=>{$('text').value=t;upd();};$('chips').appendChild(c)});
+function upd(){$('len').textContent=$('text').value.length+' / 120'}
+$('text').addEventListener('input',upd);upd();
+async function j(u,o){const r=await fetch(u,o);return r.json()}
+async function init(){
+  for(let i=0;i<90;i++){
+    let info;
+    try{info=await j('/api/info')}catch(e){await new Promise(s=>setTimeout(s,1500));continue}
+    if(info.status==='ready'){
+      info.speakers.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;$('speaker').appendChild(o)});
+      $('speaker').value='serena';
+      $('msg').textContent=`就绪 · ${info.engine} · ${info.quant} · ${info.threads} 线程 · 加载 ${info.load_sec}s`;
+      $('go').disabled=false;return;
+    }
+    if(info.status==='error'){$('msg').textContent='模型加载失败：'+info.error;return}
+    await new Promise(s=>setTimeout(s,1500));
+  }
+  $('msg').textContent='模型加载超时';
+}
+$('go').onclick=async()=>{
+  const text=$('text').value.trim();if(!text){$('msg').textContent='请先输入文字';return}
+  $('go').disabled=true;$('result').hidden=true;$('bar').style.width='0%';$('msg').textContent='任务已提交，排队中…';
+  let r;
+  try{r=await j('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,speaker:$('speaker').value})})}
+  catch(e){$('msg').textContent='提交失败：'+e;$('go').disabled=false;return}
+  if(r.error){$('msg').textContent=r.error;$('go').disabled=false;return}
+  const t0=Date.now();
+  const timer=setInterval(async()=>{
+    let s;try{s=await j('/api/status/'+r.job_id)}catch(e){return}
+    const el=(Date.now()-t0)/1000;
+    if(s.state==='done'){
+      clearInterval(timer);$('bar').style.width='100%';
+      $('player').src=s.wav+'?t='+Date.now();
+      $('dl').href=s.wav;$('dl').download=r.job_id+'.wav';
+      $('meta').textContent=`生成 ${s.elapsed}s · 音频 ${s.duration}s · 音色 ${s.speaker}`;
+      $('msg').textContent='生成完成';$('result').hidden=false;$('go').disabled=false;
+    }else if(s.state==='error'){clearInterval(timer);$('msg').textContent='生成失败：'+s.message;$('go').disabled=false}
+    else{
+      const eta=s.eta||0,pct=Math.min(95,Math.round(el/(el+eta)*100));
+      $('bar').style.width=pct+'%';
+      $('msg').textContent=(s.state==='queued'?'排队中':'生成中')+` · 已用 ${el.toFixed(0)}s · 预计还需 ${eta}s`;
+    }
+  },1500);
+};
+init();
+</script>
+</body>
+</html>

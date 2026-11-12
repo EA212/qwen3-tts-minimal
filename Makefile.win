@@ -1,0 +1,35 @@
+# =============================================================================
+# Qwen3-TTS 极简环境 —— Windows 版 Make（需 GNU make，如 Git Bash / MSYS2 / choco）
+#
+#   make -f Makefile.win          自动选 Docker（优先）或 WSL2
+#   make -f Makefile.win deps     只拉取依赖
+#   make -f Makefile.win docker   Docker Desktop 路线
+#   make -f Makefile.win wsl      WSL2 路线
+#   make -f Makefile.win verify   容器内自检
+#   make -f Makefile.win help     帮助
+#
+# 没有 GNU make 时直接用 make.bat（零依赖）。
+# 引擎无 Windows 原生 wheel，两条路线都借助 Linux 运行时，详见 docs\Windows说明.md
+# =============================================================================
+
+PS := powershell -NoProfile -ExecutionPolicy Bypass -File setup.ps1 -Target
+.DEFAULT_GOAL := all
+.PHONY: all deps docker wsl verify help
+
+all:                       ## 自动选路线并运行
+	$(PS) all
+
+deps:                      ## 只下载权重与 wheel
+	$(PS) deps
+
+docker:                    ## Docker Desktop 路线
+	$(PS) docker
+
+wsl:                       ## WSL2 路线
+	$(PS) wsl
+
+verify:                    ## 容器内生成自检音频
+	$(PS) verify
+
+help:                      ## 帮助
+	$(PS) help

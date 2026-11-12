@@ -1,0 +1,9 @@
+# 运行期唯一必需的第三方 Python 依赖。
+#
+# 推理引擎 qwentts-cpp-python 通过 ctypes 直接调用 GGML C++ 动态库，
+# 不使用 torch / transformers / modelscope / huggingface-hub / flask / ffmpeg。
+# soundfile 仅在「声音克隆」读取参考音频时惰性导入，本服务不需要。
+#
+# numpy 与 qwentts-cpp-python 的 wheel 由 fetch_deps.py 下载到 wheels/，
+# 本地与 Docker 均可 --no-index --find-links=wheels/ 完全离线安装。
+numpy>=1.26,<3
