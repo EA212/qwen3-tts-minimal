@@ -42,7 +42,7 @@ macosx_14_0_arm64          macOS Apple Silicon
 ### 一键运行
 
 ```bat
-git clone <你的仓库地址> qwen3-tts-minimal
+git clone https://github.com/EA212/qwen3-tts-minimal.git qwen3-tts-minimal
 cd qwen3-tts-minimal
 make.bat
 ```

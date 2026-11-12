@@ -22,7 +22,7 @@
 ### Linux / macOS / WSL2
 
 ```bash
-git clone <你的仓库地址> qwen3-tts-minimal
+git clone https://github.com/EA212/qwen3-tts-minimal.git qwen3-tts-minimal
 cd qwen3-tts-minimal
 make                 # 拉依赖 + 建 venv + 启动服务，一条命令搞定
 ```
@@ -32,7 +32,7 @@ make                 # 拉依赖 + 建 venv + 启动服务，一条命令搞定
 ### Windows
 
 ```bat
-git clone <你的仓库地址> qwen3-tts-minimal
+git clone https://github.com/EA212/qwen3-tts-minimal.git qwen3-tts-minimal
 cd qwen3-tts-minimal
 make.bat
 ```
