@@ -33,13 +33,15 @@ make                 # 拉依赖 + 建 venv + 启动服务，一条命令搞定
 
 **推荐：原生单文件版（无需任何环境）**
 
+> **不想 clone？** 直接下载 **[Qwen3-TTS-Windows.zip](Qwen3-TTS-Windows.zip)**（4 MB），解压就是一个干净文件夹（exe + 下载 BAT + 中文说明），按下面两步用即可。
+
 [windows/](windows/) 目录提供编译好的原生 Windows x86_64 单文件程序，`tts-server.exe` 已内嵌网页界面，只依赖系统自带 DLL：
 
-1. 把 `windows` 整个目录拷到目标 Windows 机器（U 盘即可，无需安装）；
-2. 双击 `download-models.bat` 下载模型（约 820 MB，带 SHA256 校验）；
-3. 双击 `start.bat`，浏览器自动打开 <http://127.0.0.1:8080> 即可使用。
+1. 把 `windows` 整个目录拷到目标 Windows 机器（U 盘即可，无需安装），确保 `tts-server.exe` 和 `download-models.bat` 在**同一个文件夹**；
+2. 双击 `download-models.bat` —— 自动创建 `models\` 文件夹并下载模型（约 820 MB，带 SHA256 校验）；
+3. 双击 **`tts-server.exe`** —— 自动找到同目录模型、启动服务并打开浏览器，进 <http://127.0.0.1:8080> 即可使用。
 
-不需要 Python、venv、pip、Docker、WSL2、CUDA 或 VC++ 运行库；`qwen-tts.exe` 另提供命令行版。详见 [windows/README.md](windows/README.md)（含 Wine 实跑验证、性能实测与重新编译方法）。
+exe 不带参数即可运行（`start.bat` 只是可选的启动壳）；缺模型时会打印提示而不是一闪而过。不需要 Python、venv、pip、Docker、WSL2、CUDA 或 VC++ 运行库；`qwen-tts.exe` 另提供命令行版。详见 [windows/README.md](windows/README.md)（含 Wine 实跑验证、性能实测与重新编译方法）。
 
 **备选：Docker / WSL2 方案（原主方案）**
 

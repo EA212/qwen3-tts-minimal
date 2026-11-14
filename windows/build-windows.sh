@@ -54,6 +54,91 @@ if 'svr.Get("/",' not in s:
 open(p, "w", encoding="utf-8").write(s)
 PY
 
+# ---- 3b. 让 exe 双击即可运行（零参数自动找模型 + 自动开浏览器） ----
+echo "[3b/6] 注入双击运行逻辑 ..."
+python3 - "$SRC/tools/tts-server.cpp" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+if 'QWEN_DOUBLE_CLICK_MODE' not in s:
+    inc = '#include <vector>\n'
+    assert inc in s, "找不到 include 锚点"
+    s = s.replace(inc, inc + r'''
+#ifdef _WIN32
+#include <windows.h>
+#include <shellapi.h>
+#endif
+#define QWEN_DOUBLE_CLICK_MODE 1
+''', 1)
+
+    old = r'''    if (!talker_path || !codec_path) {
+        print_usage(argv[0]);
+        return 1;
+    }
+'''
+    new = r'''    // Double-click mode: with no --model/--codec, resolve the default GGUFs
+    // from a models\ folder next to this exe and open the browser for the
+    // embedded UI. Put the exe + models\ in one folder and that is the
+    // entire install; no BAT, no command line, no Python.
+    bool auto_open_browser = false;
+    if (!talker_path && !codec_path) {
+#ifdef _WIN32
+        char exe_path[MAX_PATH] = { 0 };
+        GetModuleFileNameA(NULL, exe_path, MAX_PATH);
+        std::string dir(exe_path);
+        const size_t slash = dir.find_last_of("\\/");
+        dir = (slash == std::string::npos) ? std::string(".") : dir.substr(0, slash);
+        static std::string auto_talker = dir + "\\models\\qwen-talker-0.6b-customvoice-Q4_K_M.gguf";
+        static std::string auto_codec  = dir + "\\models\\qwen-tokenizer-12hz-Q4_K_M.gguf";
+        talker_path = auto_talker.c_str();
+        codec_path  = auto_codec.c_str();
+        lang = "Chinese";
+        auto_open_browser = true;
+
+        auto file_exists = [](const char * p) -> bool {
+            FILE * f = std::fopen(p, "rb");
+            if (!f) return false;
+            std::fclose(f);
+            return true;
+        };
+        if (!file_exists(talker_path) || !file_exists(codec_path)) {
+            std::fprintf(stderr, "\n[Qwen3-TTS] Model files not found.\n\n");
+            std::fprintf(stderr, "  Put these two files in the models folder next to this exe:\n");
+            std::fprintf(stderr, "    %s\n", auto_talker.c_str());
+            std::fprintf(stderr, "    %s\n", auto_codec.c_str());
+            std::fprintf(stderr, "\n  Run download-models.bat first, or copy them manually.\n");
+            std::fprintf(stderr, "\nPress Enter to close...\n");
+            std::getchar();
+            return 1;
+        }
+#else
+        print_usage(argv[0]);
+        return 1;
+#endif
+    } else if (!talker_path || !codec_path) {
+        print_usage(argv[0]);
+        return 1;
+    }
+'''
+    assert old in s, "找不到参数校验锚点（上游改版？）"
+    s = s.replace(old, new, 1)
+
+    old2 = '    int rc = tts_server_run(be, cfg);'
+    new2 = r'''#ifdef _WIN32
+    if (auto_open_browser) {
+        char url[128];
+        std::snprintf(url, sizeof(url), "http://%s:%d/", cfg.host.c_str(), cfg.port);
+        // The embedded page auto-reconnects while the weights load, so
+        // opening the browser slightly before listen() succeeds is fine.
+        ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOWNORMAL);
+    }
+#endif
+    int rc = tts_server_run(be, cfg);'''
+    assert old2 in s, "找不到 server_run 调用点"
+    s = s.replace(old2, new2, 1)
+    open(p, "w", encoding="utf-8").write(s)
+PY
+
 # ---- 4. CMake 配置 ----
 # -march=x86-64-v3 (AVX2/FMA/BMI2) 是通用基线，绝不能用 -march=native：
 # 那会把编译机的 AVX-512 烧进 exe，在没有该指令集的用户机器上直接崩。
