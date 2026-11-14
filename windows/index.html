@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Qwen3-TTS · Windows 单文件版</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:#0e1116;color:#e6e9ef;font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:700px;margin:0 auto;padding:40px 20px 70px}
+h1{font-size:25px;margin:0 0 6px;font-weight:650}
+h1 span{font-size:12px;font-weight:500;color:#7ee2b8;border:1px solid #2b6b52;border-radius:20px;padding:3px 10px;vertical-align:middle;margin-left:8px}
+.sub{color:#8b93a1;margin:0 0 24px;font-size:13px}
+.sub b{color:#c8d0dc;font-weight:500}
+.conn{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#141922;border:1px solid #232a35;border-radius:10px;padding:10px 12px;margin-bottom:18px}
+.conn label{color:#8b93a1;font-size:12px;display:flex;align-items:center;gap:8px}
+input#base{background:#0e1116;border:1px solid #2a313d;border-radius:7px;color:#e6e9ef;padding:6px 9px;font:13px ui-monospace,Consolas,monospace;width:210px;outline:none}
+input#base:focus{border-color:#3d8f70}
+.pill{font-size:12px;padding:3px 10px;border-radius:20px;border:1px solid #2a313d;color:#8b93a1}
+.pill.ok{color:#7ee2b8;border-color:#2b6b52;background:#122a20}
+.pill.bad{color:#f0a6a6;border-color:#6b3535;background:#2a1616}
+button.mini{background:#1c2430;border:1px solid #2a313d;color:#aab3c0;border-radius:7px;padding:6px 11px;font-size:12px;cursor:pointer}
+button.mini:hover{border-color:#3d8f70;color:#dfe6ee}
+textarea{width:100%;height:120px;background:#171c24;border:1px solid #2a313d;border-radius:12px;color:#e6e9ef;padding:14px 16px;resize:vertical;font:inherit;outline:none}
+textarea:focus{border-color:#3d8f70}
+.row{display:flex;align-items:center;gap:14px;margin:14px 0 10px;flex-wrap:wrap}
+.row label{color:#8b93a1;font-size:13px;display:flex;align-items:center;gap:8px}
+select{background:#171c24;border:1px solid #2a313d;border-radius:9px;color:#e6e9ef;padding:7px 11px;font:inherit;outline:none}
+#len{color:#667080;font-size:12px;margin-left:auto}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.chip{background:#171c24;border:1px solid #2a313d;border-radius:20px;padding:5px 12px;color:#aab3c0;font-size:12px;cursor:pointer}
+.chip:hover{border-color:#3d8f70;color:#dfe6ee}
+button#go{width:100%;background:#2f8f68;color:#fff;border:0;border-radius:10px;padding:13px;font-size:15px;font-weight:600;cursor:pointer}
+button#go:hover{background:#37a67a}
+button#go:disabled{background:#2a313d;color:#6c7686;cursor:not-allowed}
+#msg{color:#8b93a1;font-size:13px;min-height:22px;margin-top:12px}
+#result{margin-top:18px;padding:18px;background:#171c24;border:1px solid #2a313d;border-radius:12px}
+audio{width:100%;display:block;margin-bottom:12px}
+a.dl{display:inline-block;color:#7ee2b8;text-decoration:none;font-size:13px;border:1px solid #2b6b52;border-radius:8px;padding:8px 14px}
+a.dl:hover{background:#16362a}
+.meta{color:#667080;font-size:12px;margin-top:10px}
+.tip{color:#5b6472;font-size:12px;margin-top:26px;border-top:1px solid #1e242e;padding-top:14px;line-height:1.9}
+.tip code{background:#171c24;padding:1px 6px;border-radius:4px;color:#9fb0c0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Qwen3-TTS <span>单文件 · 纯 CPU</span></h1>
+<p class="sub">原生 C++ 引擎 · <b>Q4_K_M 量化</b> · 本地推理，文字不上传 · 无需 Python / Docker / WSL</p>
+
+<div class="conn">
+  <label>服务地址 <input id="base" value="http://127.0.0.1:8080" spellcheck="false"></label>
+  <button id="reload" class="mini">重新连接</button>
+  <span id="stat" class="pill">检测中…</span>
+</div>
+
+<textarea id="text" maxlength="300">你好，我是千问三语音合成模型，这是 Windows 单文件版。</textarea>
+<div class="row">
+  <label>音色 <select id="voice"></select></label>
+  <label>语言 <select id="lang">
+    <option value="Chinese">中文 Chinese</option>
+    <option value="English">English</option>
+    <option value="auto">自动 auto</option>
+  </select></label>
+  <span id="len">0 / 300</span>
+</div>
+<div class="chips" id="chips"></div>
+<button id="go" disabled>生成音频</button>
+<div id="msg">正在连接本地服务…</div>
+<div id="result" hidden>
+  <audio id="player" controls></audio>
+  <a id="dl" class="dl" download="tts.wav">下载 WAV</a>
+  <div class="meta" id="meta"></div>
+</div>
+
+<div class="tip">
+  用法：先运行 <code>启动.bat</code>，服务在本机 8080 端口启动后本页即可使用。<br>
+  也可用任意 OpenAI 兼容客户端调用 <code>POST /v1/audio/speech</code>；命令行版为 <code>qwen-tts.exe</code>。<br>
+  模型文件放在 <code>models\</code> 目录，首次需单独下载（约 820 MB）。
+</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const EX=["你好，我是千问三语音合成模型，这是 Windows 单文件版。","今天天气不错，我们一起去公园散步吧。","这段文字用来测试语音合成的速度和音质。","欢迎使用本地部署的文字转语音服务。"];
+EX.forEach(t=>{const c=document.createElement('span');c.className='chip';c.textContent=t.length>16?t.slice(0,15)+'…':t;c.title=t;c.onclick=()=>{$('text').value=t;upd()};$('chips').appendChild(c)});
+function upd(){$('len').textContent=$('text').value.length+' / 300'}
+$('text').addEventListener('input',upd);upd();
+const api=p=>$('base').value.replace(/\/+$/,'')+p;
+let lastUrl=null;
+
+function setStat(txt,cls){$('stat').textContent=txt;$('stat').className='pill'+(cls?' '+cls:'')}
+
+async function loadVoices(){
+  const sel=$('voice');
+  if(sel.options.length)return;
+  let list=[];
+  try{
+    const r=await fetch(api('/v1/audio/voices'),{cache:'no-store'});
+    const j=await r.json();
+    list=(j.voices||[]).map(v=>v.name).filter(Boolean);
+  }catch(e){}
+  if(!list.length)list=['serena','vivian','uncle_fu','dylan','eric','ono_anna','ryan','aiden','ethan'];
+  list.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o)});
+  if(list.includes('serena'))sel.value='serena';
+}
+
+let retryTimer=null,retryLeft=0;
+async function check(){
+  clearTimeout(retryTimer);
+  setStat('检测中…','');
+  $('go').disabled=true;
+  try{
+    const r=await fetch(api('/health'),{cache:'no-store'});
+    if(!r.ok)throw 0;
+    setStat('● 服务就绪','ok');
+    await loadVoices();
+    $('msg').textContent='就绪 · 输入文字即可生成（纯 CPU，约需数秒）';
+    $('go').disabled=false;
+  }catch(e){
+    if(retryLeft>0){
+      retryLeft--;
+      setStat('○ 等待服务…','bad');
+      $('msg').textContent='等待服务启动…（首次加载模型约需 10-30 秒，自动重试中 '+retryLeft+'）';
+      retryTimer=setTimeout(check,2000);
+    }else{
+      setStat('○ 未连接','bad');
+      $('msg').textContent='未检测到服务：请确认已运行「启动.bat」，或检查上方服务地址与端口。';
+    }
+  }
+}
+
+function reconnect(){retryLeft=8;$('voice').innerHTML='';check()}
+$('reload').onclick=reconnect;
+$('base').addEventListener('keydown',e=>{if(e.key==='Enter')reconnect()});
+
+$('go').onclick=async()=>{
+  const text=$('text').value.trim();
+  if(!text){$('msg').textContent='请先输入文字';return}
+  if(!$('voice').value){$('msg').textContent='音色尚未加载，请点「重新连接」';return}
+  $('go').disabled=true;$('result').hidden=true;
+  const t0=performance.now();
+  $('msg').textContent='生成中…（纯 CPU 推理，请稍候）';
+  try{
+    const r=await fetch(api('/v1/audio/speech'),{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({input:text,voice:$('voice').value,language:$('lang').value,response_format:'wav'})
+    });
+    if(!r.ok){
+      let m='HTTP '+r.status;
+      try{const j=await r.json();m=(j.error&&j.error.message)||j.message||m}catch(_){}
+      throw new Error(m);
+    }
+    const buf=await r.arrayBuffer();
+    const blob=new Blob([buf],{type:'audio/wav'});
+    if(lastUrl)URL.revokeObjectURL(lastUrl);
+    lastUrl=URL.createObjectURL(blob);
+    $('player').src=lastUrl;
+    $('dl').href=lastUrl;$('dl').download='tts-'+Date.now()+'.wav';
+    const sec=((performance.now()-t0)/1000).toFixed(2);
+    const dur=Math.max(0,(buf.byteLength-44)/48000).toFixed(2);
+    $('meta').textContent=`生成耗时 ${sec}s · 音频 ${dur}s · ${(buf.byteLength/1024).toFixed(0)} KB · 音色 ${$('voice').value}`;
+    $('msg').textContent='生成完成';
+    $('result').hidden=false;
+    $('player').play().catch(()=>{});
+  }catch(e){
+    $('msg').textContent='生成失败：'+e.message;
+  }finally{
+    $('go').disabled=false;
+  }
+};
+retryLeft=90;check();
+</script>
+</body>
+</html>

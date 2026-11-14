@@ -31,13 +31,27 @@ make                 # 拉依赖 + 建 venv + 启动服务，一条命令搞定
 
 ### Windows
 
+**推荐：原生单文件版（无需任何环境）**
+
+[windows/](windows/) 目录提供编译好的原生 Windows x86_64 单文件程序，`tts-server.exe` 已内嵌网页界面，只依赖系统自带 DLL：
+
+1. 把 `windows` 整个目录拷到目标 Windows 机器（U 盘即可，无需安装）；
+2. 双击 `download-models.bat` 下载模型（约 820 MB，带 SHA256 校验）；
+3. 双击 `start.bat`，浏览器自动打开 <http://127.0.0.1:8080> 即可使用。
+
+不需要 Python、venv、pip、Docker、WSL2、CUDA 或 VC++ 运行库；`qwen-tts.exe` 另提供命令行版。详见 [windows/README.md](windows/README.md)（含 Wine 实跑验证、性能实测与重新编译方法）。
+
+**备选：Docker / WSL2 方案（原主方案）**
+
+GGML 引擎上游只发布 Linux / macOS 的预编译包，**没有 Windows 原生 wheel**，所以 `make.bat` 会自动选择 **Docker Desktop**（优先）或 **WSL2**，在 Linux 运行时里跑，不能直接用 Windows 的 Python：
+
 ```bat
 git clone https://github.com/EA212/qwen3-tts-minimal.git qwen3-tts-minimal
 cd qwen3-tts-minimal
 make.bat
 ```
 
-> **注意**：GGML 引擎上游只发布 Linux / macOS 的预编译包，**没有 Windows 原生 wheel**。所以 Windows 上 `make.bat` 会自动选择 **Docker Desktop**（优先）或 **WSL2**，在 Linux 运行时里跑，不能直接用 Windows 的 Python。详见 [docs/Windows说明.md](docs/Windows说明.md)。
+详见 [docs/Windows说明.md](docs/Windows说明.md)。
 
 ### Docker（任意平台）
 
